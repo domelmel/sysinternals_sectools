@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Pobieranie narzedzi Sysinternals do pracy offline (np. na pendrive).
+Download Sysinternals tools for offline use (for example on a USB drive).
 
-Domyslnie skrypt pobiera:
-- Top 10 narzedzi administratorskich
-- dodatkowe narzedzia security
+By default, the script downloads:
+- Top 10 administrator tools
+- additional security tools
 
-Uzycie:
+Usage:
   python3 download_sysinternals.py
   python3 download_sysinternals.py --only top10
   python3 download_sysinternals.py --only security
@@ -41,7 +41,7 @@ class Tool:
 
     @property
     def fallback_filenames(self) -> tuple[str, ...]:
-        # Niektore pliki Sysinternals maja warianty wielkosci liter w nazwie.
+        # Some Sysinternals files are published with different letter casing.
         variants = {self.filename, self.filename.lower(), self.filename.upper()}
         manual_map = {
             "PsTools.zip": ("PSTools.zip", "pstools.zip"),
@@ -64,7 +64,7 @@ TOP10_TOOLS: tuple[Tool, ...] = (
     Tool("Process Explorer", "ProcessExplorer.zip"),
     Tool("Process Monitor", "ProcessMonitor.zip"),
     Tool("Autoruns", "Autoruns.zip"),
-    Tool("PsExec (w pakiecie PsTools)", "PsTools.zip", "Zawiera m.in. PsExec, PsList, PsKill"),
+    Tool("PsExec (included in PsTools package)", "PsTools.zip", "Includes PsExec, PsList, PsKill, and more"),
     Tool("TCPView", "TCPView.zip"),
     Tool("RAMMap", "RAMMap.zip"),
     Tool("Disk2Vhd", "Disk2vhd.zip"),
@@ -74,39 +74,39 @@ TOP10_TOOLS: tuple[Tool, ...] = (
 )
 
 SECURITY_EXTRA_TOOLS: tuple[Tool, ...] = (
-    Tool("Sigcheck", "Sigcheck.zip", "Sprawdzanie podpisow i reputacji plikow"),
-    Tool("Handle", "Handle.zip", "Sprawdza, ktory proces trzyma uchwyt do pliku"),
-    Tool("ProcDump", "Procdump.zip", "Zrzuty procesu do analizy incydentow"),
-    Tool("Strings", "Strings.zip", "Szybki rekonesans artefaktow tekstowych w plikach"),
-    Tool("VMMap", "VMMap.zip", "Analiza mapowania pamieci procesu"),
-    Tool("WinObj", "WinObj.zip", "Przeglad obiektow jadra/systemu"),
+    Tool("Sigcheck", "Sigcheck.zip", "Verify file signatures and reputation"),
+    Tool("Handle", "Handle.zip", "Find which process holds a file handle"),
+    Tool("ProcDump", "Procdump.zip", "Capture process dumps for incident analysis"),
+    Tool("Strings", "Strings.zip", "Quick reconnaissance of text artifacts in files"),
+    Tool("VMMap", "VMMap.zip", "Analyze process memory mapping"),
+    Tool("WinObj", "WinObj.zip", "Browse kernel/system object namespaces"),
 )
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Pobierz narzedzia Sysinternals do folderu lokalnego (portable)."
+        description="Download Sysinternals tools to a local portable folder."
     )
     parser.add_argument(
         "--dest",
         default="downloads/sysinternals_portable",
-        help="Katalog docelowy (domyslnie: ./downloads/sysinternals_portable)",
+        help="Destination directory (default: ./downloads/sysinternals_portable)",
     )
     parser.add_argument(
         "--only",
         choices=("top10", "security", "all"),
         default="all",
-        help="Co pobrac: top10, security albo all (domyslnie: all)",
+        help="What to download: top10, security, or all (default: all)",
     )
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Nadpisz istniejace pliki",
+        help="Overwrite existing files",
     )
     parser.add_argument(
         "--list",
         action="store_true",
-        help="Wyswietl liste narzedzi i zakoncz",
+        help="Show the tool list and exit",
     )
     return parser.parse_args()
 
@@ -172,7 +172,7 @@ def run_download(group_name: str, tools: Iterable[Tool], base_dir: Path, force: 
     skipped = 0
     failed = 0
 
-    print(f"\n=== Pobieranie: {group_name} -> {group_dir} ===")
+    print(f"\n=== Downloading: {group_name} -> {group_dir} ===")
     for tool in tools:
         dest = group_dir / tool.filename
         status, used_url = download_tool(tool, group_dir, force=force)
@@ -181,7 +181,7 @@ def run_download(group_name: str, tools: Iterable[Tool], base_dir: Path, force: 
             print(f"[OK]   {tool.name}: {used_url}")
         elif status == "SKIP":
             skipped += 1
-            print(f"[SKIP] {tool.name}: plik juz istnieje ({dest.name})")
+            print(f"[SKIP] {tool.name}: file already exists ({dest.name})")
         else:
             failed += 1
             print(f"[FAIL] {tool.name}: {used_url} -> {status}")
@@ -194,7 +194,7 @@ def main() -> int:
     dest_dir = Path(args.dest).resolve()
 
     print_toolset("Top 10 Sysinternals", TOP10_TOOLS)
-    print_toolset("Dodatkowe narzedzia security", SECURITY_EXTRA_TOOLS)
+    print_toolset("Additional security tools", SECURITY_EXTRA_TOOLS)
 
     if args.list:
         return 0
@@ -217,17 +217,17 @@ def main() -> int:
         total_skipped += skipped
         total_failed += failed
 
-    print("\n=== Podsumowanie ===")
-    print(f"Docelowy katalog: {dest_dir}")
-    print(f"Pobrane:          {total_ok}")
-    print(f"Pominiete:        {total_skipped}")
-    print(f"Bledy:            {total_failed}")
+    print("\n=== Summary ===")
+    print(f"Destination directory: {dest_dir}")
+    print(f"Downloaded:            {total_ok}")
+    print(f"Skipped:               {total_skipped}")
+    print(f"Errors:                {total_failed}")
 
     if total_failed:
-        print("\nCzesc plikow nie zostala pobrana. Uruchom ponownie z --force po sprawdzeniu lacza.")
+        print("\nSome files could not be downloaded. Re-run with --force after checking connectivity.")
         return 2
 
-    print("\nGotowe. Katalog mozna skopiowac 1:1 na pendrive.")
+    print("\nDone. You can copy this directory directly to a USB drive.")
     return 0
 
 
