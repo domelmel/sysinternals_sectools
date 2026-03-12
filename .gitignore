@@ -1,0 +1,7 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Downloaded Sysinternals packages (portable artifacts)
+downloads/
+sysinternals_portable/
